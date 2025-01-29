@@ -534,6 +534,44 @@ app.get("/client/search", async (req, res) => {
   }
 });
 
+// Função para deletar arquivos que estão na pasta de downloads há mais de 15 minutos
+function deleteOldDownloads() {
+  const downloadDir = path.join(__dirname, 'downloads');
+  fs.readdir(downloadDir, (err, files) => {
+    if (err) {
+      console.error("Erro ao ler a pasta de downloads:", err);
+      return;
+    }
+
+    const now = Date.now();
+    const fifteenMinutes = 15 * 60 * 1000; // 15 minutos em milissegundos
+
+    files.forEach(file => {
+      const filePath = path.join(downloadDir, file);
+      fs.stat(filePath, (err, stats) => {
+        if (err) {
+          console.error("Erro ao obter informações do arquivo:", err);
+          return;
+        }
+
+        // Verifica se o arquivo foi criado há mais de 15 minutos
+        if (now - stats.mtimeMs > fifteenMinutes) {
+          fs.unlink(filePath, (err) => {
+            if (err) {
+              console.error("Erro ao deletar o arquivo:", err);
+            } else {
+              console.log(`Arquivo deletado: ${filePath}`);
+            }
+          });
+        }
+      });
+    });
+  });
+}
+
+// Chama a função a cada 5 minutos
+setInterval(deleteOldDownloads, 5 * 60 * 1000);
+
 app.listen(PORT, () => {
   console.log(`Aplicaçao rodando em http://${HOST}:${PORT}`);
 
